@@ -1,0 +1,28 @@
+{% extends 'template.html.twig' %}
+
+{% block title %}Hello Personne{% endblock %}
+
+{% block blockBody %}
+    
+
+
+
+
+<div class="row my-5">
+            <div class="col-8">
+                <div class="card bg-light " >
+                    <div class="card-header bg-dark text-white">
+                        Personne details
+                    </div>
+                    <div class="card-body text-black">
+                        <h5 class="card-title">HELLO 🙂✌️</h5>
+                        <p class="card-text">
+                            I'm {{personne.name}} {{personne.firstname}}. I'm {{personne.age}} yrs old 
+                        </p>
+                        <a href="{{path('personne.list')}}" class="btn btn-primary">go back</a>
+                    </div>
+                    <div class="card-footer text-muted">{{'now' |date('Y-m-d H:i:s')}}</div>
+                </div>
+            </div>
+        </div>
+{% endblock %}

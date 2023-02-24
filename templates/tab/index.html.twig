@@ -1,0 +1,35 @@
+{% extends "template.html.twig" %}
+
+
+{% block blockBody %}
+    {{include('fragments/date-jour.html.twig') }}
+    <div class="alert alert-warning">
+        <a href="{{path('app_tab',{nb : 7}) }}">stats table</a>
+    </div>
+    <table class="table table-responsive table-active table-striped">
+        <tr class="table-dark">
+            <td>firstname</td>
+            <td>name</td>
+            <td>age</td>
+            <td>message</td>
+        </tr>
+            {% for user in users %}
+                <tr>
+                    <td>{{user.firstname}}</td>
+                    <td>{{user.name}}</td>
+                    <td>{{user.age}}</td>
+                    <td>{{ render(controller('App\\Controller\\FirstController::index',{firstname:user.firstname,name:user.name}))}}</td>
+
+                </tr>
+
+            {% endfor %}
+    </table>
+{% endblock %}
+
+{% block title %}
+users
+{% endblock %}
+
+{% block pageTitle %}
+users
+{% endblock %}

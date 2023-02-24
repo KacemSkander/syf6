@@ -1,0 +1,10 @@
+{% extends 'twig_heritage/heritage.html.twig' %}
+
+{% block titre%}
+nouveau titre 
+{% endblock %}
+
+{% block corp %}
+{{ parent() }}
+     nouveau corp du document par defaut 
+    {% endblock %}

@@ -1,0 +1,25 @@
+{% extends "template.html.twig" %}
+
+{% block blockBody %}
+
+   
+       
+    {% block pageTitle %}
+    liste de todos :
+    {% endblock %}
+    
+    <ol class="list-group">
+        {% for name,content in app.session.get('todo') %}
+        <li class="list-group-item ">
+            {{name}} : {{ content }}
+        </li>
+        {% endfor %}
+    </ol>
+<script src={{asset('node_modules/bootstrap/dist/js/bootstrap.js')}}></script>
+
+
+{% endblock %}
+
+{% block title %}
+todos
+{% endblock %}
