@@ -2,29 +2,51 @@
 
 namespace App\Controller;
 use App\Entity\Personne ;
+use App\Event\AddPersonneEvent;
+use App\Event\ListeAllPersonneEvent;
 use App\Form\PersonneType;
+use App\service\Helpers;
+use App\service\MailerService;
+use App\service\PdfServices;
+use App\service\UploaderService;
 use Doctrine\Persistence\ManagerRegistry ;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\Validator\Constraints\Isbn;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface as EventDispatcherEventDispatcherInterface;
 
-#[Route('/personne')]
+#[
+    Route('/personne'),
+    IsGranted('ROLE_USER')
+    
+]
 class PersonneController extends AbstractController
 {   
 
-    #[Route('/', name: 'personne.list')]
+    public function __construct(private LoggerInterface $logger, private Helpers $helper, EventDispatcherInterface $dispatcher)
+    {}
+    #[
+        Route('/', name: 'personne.list'),
+        IsGranted("ROLE_USER")  
+    ]
     public function findAll(ManagerRegistry $doctrine): Response
     {
         $repository=$doctrine->getRepository(Personne::class);
         $personnes=$repository->findAll();
+       # $listeAllPersonneEvent =new listeAllPersonneEvent(count($personnes));
+       # $this->dispatcher->dispatch($listeAllPersonneEvent, ListeAllPersonneEvent::LISTE_ALL_PERSONNE_EVENT);
 
         return $this->render('personne/all.html.twig',['personnes'=>$personnes]);
     }
-
+/*
     #[Route('/add', name: 'personne.add')]
     public function appPersonne(ManagerRegistry $doctrine,Request $request): Response
     {   
@@ -48,11 +70,18 @@ class PersonneController extends AbstractController
 
         }
     }
+*/
+    #[Route('/pdf/{id}', name: 'personne.pdf')]
+    public function generatePdfPersonne(Personne $personne = null, PdfServices $pdf) {
+        $html = $this->render('personne/findOne.html.twig', ['personne' => $personne]);
+        $pdf->showPdfFile($html);
+    }
 
 
     #[Route('/edit/{id?0<\d+>}', name: 'personne.edit')]
-    public function editPersonne(ManagerRegistry $doctrine,Request $request,Personne $personne=null,SluggerInterface $slugger): Response
-    {   $new=false ;
+    public function editPersonne(ManagerRegistry $doctrine, Request $request, Personne $personne=null, UploaderService $uploaderService, MailerService $mailer): Response
+    {   $this->denyAccessUnlessGranted('ROLE_ADMIN');
+         $new=false ;
         if(!$personne)
         {   $new=false;
             $personne=new Personne();
@@ -69,37 +98,32 @@ class PersonneController extends AbstractController
             // this condition is needed because the 'brochure' field is not required
             // so the PDF file must be processed only when a file is uploaded
             if ($photo) {
-                $originalFilename = pathinfo($photo->getClientOriginalName(), PATHINFO_FILENAME);
-                // this is needed to safely include the file name as part of the URL
-                $safeFilename = $slugger->slug($originalFilename);
-                $newFilename = $safeFilename.'-'.uniqid().'.'.$photo->guessExtension();
-
-                // Move the file to the directory where brochures are stored
-                try {
-                    $photo->move(
-                        $this->getParameter('personnes_directory'),
-                        $newFilename
-                    );
-                } catch (FileException $e) {
-                    // ... handle exception if something happens during file upload
-                }
-
-                // updates the 'brochureFilename' property to store the PDF file name
-                // instead of its contents
-                $personne->setImage($newFilename);
+                $directory=$this->getParameter('personnes_directory');
+                $personne->setImage($uploaderService->uploadFile($photo, $directory));
             }
-
-            $entityManager=$doctrine->getManager();
-            $entityManager->persist($personne);
-            
-            $entityManager->flush();
             if($new)
             {
-                $message="a ete ajouter avec success";
-            }else
+                $message="a été ajouter avec success";
+                $personne->setCreatedBy($this->getUser());
+            } else {
             $message="a ete updated avec success";
+            }
+
+            $Manager=$doctrine->getManager();
+            $Manager->persist($personne);
+            
+            $Manager->flush();
+
+            if($new){
+                $addPersonneEvent=new AddPersonneEvent($personne);
+                $this->dispatcher->dispatch($addPersonneEvent, AddPersonneEvent::ADD_PERSONNE_EVENT);
+            }
+           
+            $mailMessage=$personne->getName()."  ".$personne->getFirstname().'   '.$message ;
 
             $this->addFlash('success',$personne->getName().$message);
+
+            $mailer->sendEmail(subject:$mailMessage);
 
             return $this->redirectToRoute('personne.list');
         }else{
@@ -123,6 +147,7 @@ class PersonneController extends AbstractController
     #[Route('/page/{page?1}/{nbr?10}', name: 'personne.page')]
     public function findbypage(ManagerRegistry $doctrine,$nbr,$page): Response
     {
+        echo ($this->helper->sayCc());
         $repository=$doctrine->getRepository(Personne::class);
         
         $personnes=$repository->findBy([],['age'=>'ASC'],$nbr,($page-1)*$nbr);
@@ -135,7 +160,10 @@ class PersonneController extends AbstractController
                                                              'page'=>$page
                                                         ]);
     } 
-    #[Route('/delete/{id<\d+>}', name: 'personne.delete')]
+    #[
+        Route('/delete/{id<\d+>}', name: 'personne.delete'),
+        IsGranted('ROLE_ADMIN')
+    ]
  public function delete(ManagerRegistry $doctrine ,Personne $personne=null):RedirectResponse
  {
     if($personne)
@@ -170,8 +198,10 @@ class PersonneController extends AbstractController
  #[Route('/all/age/{ageMin}/{ageMax}', name: 'personne.list.age')]
  public function personnesByAge(ManagerRegistry $doctrine, $ageMin, $ageMax): Response {
 
+   
      $repository = $doctrine->getRepository(Personne::class);
      $personnes = $repository->findPersonneByAgeInterval($ageMin,$ageMax) ;
+     
      return $this->render('personne/all.html.twig', ['personnes' => $personnes]);
  }
 

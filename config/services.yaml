@@ -20,5 +20,17 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
+    App\EventListener\PersonneListener:
+        tags:
+            - { name: kernel.event_listener,event: personne.add }
+            - { name: kernel.event_listener,event: personne.liste_alls,method: onListAllPersonnes, priority: 100 }
+            - { name: kernel.event_listener,event: personne.liste_alls,method: onListAllPersonnes, priority: 100 }
+            #- { name: kernel.event_listener,event: kernel.request,method: LogKernelRequest, priority: 5000 }
+
+
+    App\service\MailerService:
+      arguments:
+        $email : 'gacemskander56@gmail.com'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

@@ -1,6 +1,6 @@
 {% extends 'template.html.twig' %}
 
-{% block title %}Hello Personne{% endblock %}
+{% block title %}{{personne.name}} {{personne.firstname}}{% endblock %}
 
 {% block blockBody %}
     
@@ -19,6 +19,11 @@
                         <p class="card-text">
                             I'm {{personne.name}} {{personne.firstname}}. I'm {{personne.age}} yrs old 
                         </p>
+                        {% if app.user %}
+                        <p>
+                            Crated By : {{ app.user.email }}
+                        </p>
+                        {% endif %}
                         <a href="{{path('personne.list')}}" class="btn btn-primary">go back</a>
                     </div>
                     <div class="card-footer text-muted">{{'now' |date('Y-m-d H:i:s')}}</div>

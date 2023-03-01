@@ -11,8 +11,10 @@
           <td>firstname</td>
           <td>age</td>
           <td>details</td>
+        {% if is_granted('ROLE_ADMIN') %}
             <td>delete</td>
-            <td>update+1</td>
+            <td>edit</td>
+        {% endif %}
         </tr>
         {% for personne in personnes %}
         <tr>
@@ -20,9 +22,18 @@
         <td>{{personne.name}}</td>
         <td>{{personne.firstname}}</td>
         <td>{{personne.age}}</td>
-        <td><a href="{{path('personne.one',{'id' : personne.id}) }}">view details👇</a></td>
-        <td> <a href="{{path('personne.delete',{'id': personne.id })}}" class="btn btn-danger">remove🪓🔪</a></td>
-        <td> <a href="{{path('personne.edit',{'id': personne.id })}}" class="btn btn-success">update+1</a></td>
+        <td><a href="{{path('personne.one',{'id' : personne.id}) }}">
+          <i class="fas fa-info-circle"></i>
+        </a></td>
+       {% if is_granted('ROLE_ADMIN') %}
+        <td> <a href="{{path('personne.delete',{'id': personne.id })}}" class="btn btn-danger">
+          <i class="fas fa-user-time"></i>
+        </a></td>
+        <td> <a href="{{path('personne.edit',{'id': personne.id })}}" class="btn btn-success">
+          <i class="fas fa-user-edit"></i>
+        </a></td>
+      
+      {% endif %}
       </tr>
         {% endfor %}
     </table>

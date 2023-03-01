@@ -20,8 +20,8 @@ class FirstController extends AbstractController
     public function index1(  ): Response
     {
         return $this->render('first/first.html.twig', [
-            'name' =>'ahmed',
-            'firstname' =>'jaidi'
+            'name' =>'kacem',
+            'firstname' =>'Skander'
         ]);
     }
     #[Route('/template', name: 'template')]
